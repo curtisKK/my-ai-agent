@@ -42,16 +42,28 @@ def get_today_date() -> str:
 def get_korean_stock_price(ticker: str) -> str:
     """
     특정 한국 주식 종목의 실시간 주가를 가져옵니다.
-    사용자가 기업 이름만 부르더라도, 당신의 지식으로 6자리 한국 주식 종목코드를 찾고
-    코스피는 '.KS', 코스닥은 '.KQ'를 붙여서 입력(ticker)하세요.
-    (예: 카카오 -> '035720.KS')
+    입력값(ticker)은 반드시 '000660.KS' 같은 코드 형태여야 합니다.
     """
+    # 💡 [핵심 수정] AI가 한글을 그대로 던질 경우를 대비한 안전장치 (자주 찾는 종목들)
+    ticker_map = {
+        "SK하이닉스": "000660.KS",
+        "삼성전자": "005930.KS",
+        "카카오": "035720.KS",
+        "현대차": "005380.KS",
+        "네이버": "035420.KS",
+        "NAVER": "035420.KS"
+    }
+    
+    # AI가 'SK하이닉스'라고 주면 '000660.KS'로 바꿔치기
+    if ticker in ticker_map:
+        ticker = ticker_map[ticker]
+
     try:
         stock = yf.Ticker(ticker)
         price = stock.history(period="1d")['Close'].iloc[-1]
-        return f"{ticker}의 현재 주가는 {int(price)}원 입니다."
+        return f"현재 주가는 {int(price)}원 입니다."
     except Exception as e:
-        return f"주가 정보를 가져오는 데 실패했습니다. (입력값: {ticker})"
+        return f"주가 정보를 가져오는 데 실패했습니다. (AI가 입력한 값: {ticker})"
 
 @tool
 def get_stock_history(ticker: str) -> str:
