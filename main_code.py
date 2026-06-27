@@ -83,11 +83,19 @@ def get_stock_history(ticker: str) -> str:
         return "과거 주가 데이터를 가져오지 못했습니다."
 
 # 뉴스 검색기 도구 생성
-search_news = DuckDuckGoSearchRun(
-    name="search_news",
-    description="특정 기업의 최신 뉴스, 호재, 악재, 시장 동향 등을 웹에서 검색합니다.")
+@tool
+def search_news(query: str) -> str:
+    """
+    특정 기업의 최신 뉴스, 호재, 악재, 시장 동향 등을 웹에서 검색합니다.
+    검색어(query)는 '기업명 최신 뉴스' 형태로 입력하세요.
+    """
+    try:
+        search = DuckDuckGoSearchAPIWrapper()
+        return search.run(query)
+    except Exception as e:
+        return "뉴스 검색에 실패했습니다."
 
-tools = [get_korean_stock_price, calculate_average, multiply, get_today_date, get_korean_stock_price, get_stock_history]
+tools = [get_korean_stock_price, calculate_average, multiply, get_today_date, get_korean_stock_price, get_stock_history, search_news]
 
 # 4. 에이전트 설정 
 llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0) # 본인에게 작동했던 모델명으로 변경 가능
