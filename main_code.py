@@ -132,7 +132,7 @@ if prompt := st.chat_input("예: SK하이닉스 최근 주가 분석해 줘"):
                     success = True
                     break # 성공했으니 반복문 탈출!
                     
-                    except Exception as e:
+                except Exception as e:
                     # 💡 [수정됨] 토스트 메시지 대신, 화면에 노란색 경고창으로 진짜 에러 내용을 크게 띄웁니다!
                     st.warning(f"🚨 {model_name} 실패 원인: {e}")
                     continue
