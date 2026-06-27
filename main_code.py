@@ -80,11 +80,15 @@ def search_news(query: str) -> str:
     검색어(query)는 '기업명 최신 뉴스' 형태로 입력하세요.
     """
     try:
-        search = DuckDuckGoSearchAPIWrapper()
-        return search.run(query)
+        search = DuckDuckGoSearchRun()
+        # 혹시 모를 먹통 방지를 위해 실행 결과가 비어있으면 안내 문구 리턴
+        result = search.invoke(query)
+        if not result:
+            return "현재 DuckDuckGo에서 관련 뉴스를 찾을 수 없습니다."
+        return result
     except Exception as e:
-        # 💡 [핵심] 에러를 뭉뚱그리지 말고, 실제 발생한 에러(e)를 그대로 문자에 포함시킵니다.
-        return f"뉴스 검색에 실패했습니다. 시스템 에러 메시지: {e}"
+        # 💡 중요: 에러를 밖으로 throw하지 않고, 텍스트로 에러를 설명하여 AI에게 전달합니다.
+        return f"현재 뉴스 검색 시스템에 일시적인 오류가 발생했습니다. (사유: {e})"
 
 tools = [get_korean_stock_price, calculate_average, multiply, get_today_date, get_korean_stock_price, get_stock_history, search_news]
 
