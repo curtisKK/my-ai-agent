@@ -112,7 +112,7 @@ if prompt := st.chat_input("예: SK하이닉스 최근 주가 분석해 줘"):
             # 💡 수정 2: 실제로 존재하는 안정적인 모델명으로 변경
             models_to_try = [
                 "gemini-2.5-flash",
-                "Gemma" 
+                "gemini-2.5-flash-lite"
             ]
             
             success = False
