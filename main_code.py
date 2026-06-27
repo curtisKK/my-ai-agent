@@ -65,7 +65,7 @@ def get_korean_stock_price(ticker: str) -> str:
 tools = [get_korean_stock_price, calculate_average, multiply, get_today_date, get_korean_stock_price]
 
 # 4. 에이전트 설정 
-llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0) # 본인에게 작동했던 모델명으로 변경 가능
+llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0) # 본인에게 작동했던 모델명으로 변경 가능
 agent_executor = create_react_agent(llm, tools)
 
 # ==========================================
