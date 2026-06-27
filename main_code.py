@@ -132,8 +132,8 @@ if prompt := st.chat_input("예: SK하이닉스 최근 주가 분석해 줘"):
             
             success = False
             
-            # 실패할 때마다 새 모델을 꺼내서 에이전트를 '새로' 만듭니다.
-       for model_name in models_to_try:
+ # 실패할 때마다 새 모델을 꺼내서 에이전트를 '새로' 만듭니다.
+            for model_name in models_to_try:
                 try:
                     current_llm = ChatGoogleGenerativeAI(model=model_name, temperature=0)
                     agent_executor = create_react_agent(current_llm, tools)
@@ -161,5 +161,3 @@ if prompt := st.chat_input("예: SK하이닉스 최근 주가 분석해 줘"):
             # 모든 모델이 실패했거나 에러로 튕겼을 때
             if not success:
                 st.error("AI 에이전트 실행에 실패했습니다. 뉴스 검색 API 차단 혹은 모델 사용량 초과일 수 있습니다.")
-            
-
