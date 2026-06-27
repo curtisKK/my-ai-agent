@@ -39,76 +39,58 @@ def get_today_date() -> str:
 def get_korean_stock_price(ticker: str) -> str:
     """
     특정 한국 주식 종목의 실시간 주가를 가져옵니다.
-    
-    [중요 지시사항] 
-    사용자가 '삼성전자'나 'SK하이닉스' 처럼 기업 이름만 부르더라도,
-    당신(AI)의 지식을 활용해 해당 기업의 6자리 한국 주식 종목코드를 스스로 찾으세요.
-    그 후 코스피 종목은 뒤에 '.KS', 코스닥은 '.KQ'를 붙여서 이 도구의 입력값(ticker)으로 사용해야 합니다.
-    (예시: 사용자가 "카카오 주가 찾아줘" 라고 하면 -> '035720.KS' 를 입력하여 실행할 것)
+    사용자가 기업 이름만 부르더라도, 당신의 지식으로 6자리 한국 주식 종목코드를 찾고
+    코스피는 '.KS', 코스닥은 '.KQ'를 붙여서 입력(ticker)하세요.
+    (예: 카카오 -> '035720.KS')
     """
     try:
         stock = yf.Ticker(ticker)
         price = stock.history(period="1d")['Close'].iloc[-1]
-        return f"{ticker}의 현재 주가는 {int(price)}입니다."
+        return f"{ticker}의 현재 주가는 {int(price)}원 입니다."
     except Exception as e:
-        return f"주가 정보를 가져오는 데 실패했습니다. (입력된 값: {ticker}, 에러: {e})"
+        return f"주가 정보를 가져오는 데 실패했습니다. (입력값: {ticker})"
+
 @tool
 def get_stock_history(ticker: str) -> str:
-    """
-    특정 주식의 최근 1달간의 주가 흐름(최고가, 최저가, 변동성 등) 데이터를 가져옵니다.
-    """
+    """특정 주식의 최근 1달간의 주가 흐름(최고가, 최저가 등)을 가져옵니다."""
     try:
         stock = yf.Ticker(ticker)
-        hist = stock.history(period="1mo") # 최근 1개월 데이터
-        
-        # 데이터 전처리: 너무 길면 AI가 헷갈리므로 핵심 요약만 전달
+        hist = stock.history(period="1mo")
         max_price = int(hist['High'].max())
         min_price = int(hist['Low'].min())
         start_price = int(hist['Close'].iloc[0])
         end_price = int(hist['Close'].iloc[-1])
         trend = "상승세" if end_price > start_price else "하락세"
-        
-        return f"{ticker}의 최근 1달 흐름: 시작가 {start_price}원 -> 현재가 {end_price}원 ({trend}). 최고가는 {max_price}원, 최저가는 {min_price}원 이었습니다."
+        return f"최근 1달: 시작가 {start_price}원 -> 현재가 {end_price}원 ({trend}). 최고가 {max_price}원, 최저가 {min_price}원."
     except Exception as e:
         return "과거 주가 데이터를 가져오지 못했습니다."
 
-# 뉴스 검색기 도구 생성
 @tool
 def search_news(query: str) -> str:
-    """
-    특정 기업의 최신 뉴스, 호재, 악재, 시장 동향 등을 웹에서 검색합니다.
-    검색어(query)는 '기업명 최신 뉴스' 형태로 입력하세요.
-    """
+    """특정 기업의 최신 뉴스를 웹에서 검색합니다. '기업명 최신 뉴스' 형태로 검색하세요."""
     try:
         search = DuckDuckGoSearchRun()
-        # 혹시 모를 먹통 방지를 위해 실행 결과가 비어있으면 안내 문구 리턴
         result = search.invoke(query)
-        if not result:
-            return "현재 DuckDuckGo에서 관련 뉴스를 찾을 수 없습니다."
+        if not result or "No good DuckDuckGo Search Result" in result:
+            return "뉴스를 찾을 수 없습니다."
         return result
     except Exception as e:
-        # 💡 중요: 에러를 밖으로 throw하지 않고, 텍스트로 에러를 설명하여 AI에게 전달합니다.
-        return f"현재 뉴스 검색 시스템에 일시적인 오류가 발생했습니다. (사유: {e})"
+        return "뉴스 검색 시스템에 일시적인 오류가 있습니다."
 
-tools = [get_korean_stock_price, calculate_average, multiply, get_today_date, get_korean_stock_price, get_stock_history, search_news]
-
+# 💡 수정 1: 중복된 도구 제거 완료
+tools = [calculate_average, multiply, get_today_date, get_korean_stock_price, get_stock_history, search_news]
 
 
 # ==========================================
-# 💡 핵심: 대화 기록을 저장하는 메모리(session_state) 만들기
+# 💡 핵심: 대화 기록을 저장하는 메모리
 # ==========================================
 if "messages" not in st.session_state:
-    # 첫 접속 시 메모리(리스트)를 비워둔 상태로 생성합니다.
     st.session_state.messages = []
 
-# 기존의 대화 기록을 화면에 순서대로 그려줍니다. (새로고침 되어도 유지됨)
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# ==========================================
-# 💬 채팅 입력창 (카카오톡처럼 맨 아래에 고정됨)
-# ==========================================
 # ==========================================
 # 💬 채팅 입력창 및 에이전트 실행부
 # ==========================================
@@ -123,16 +105,14 @@ if prompt := st.chat_input("예: SK하이닉스 최근 주가 분석해 줘"):
     with st.chat_message("assistant"):
         with st.spinner("AI가 분석 중입니다..."):
             
-            # 모델 3개를 준비해두고
+            # 💡 수정 2: 실제로 존재하는 안정적인 모델명으로 변경
             models_to_try = [
-                "gemini-2.5-flash",
-                "gemini-2.5-flash-lite",
-                "gemini-1.5-flash"
+                "gemini-1.5-flash",
+                "gemini-1.5-pro"
             ]
             
             success = False
             
- # 실패할 때마다 새 모델을 꺼내서 에이전트를 '새로' 만듭니다.
             for model_name in models_to_try:
                 try:
                     current_llm = ChatGoogleGenerativeAI(model=model_name, temperature=0)
@@ -150,14 +130,11 @@ if prompt := st.chat_input("예: SK하이닉스 최근 주가 분석해 줘"):
                     st.session_state.messages.append({"role": "assistant", "content": answer_text})
                     
                     success = True
-                    break
+                    break # 성공했으니 반복문 탈출!
                     
                 except Exception as e:
-                    error_msg = str(e)
-                    # API 한도나 모델 없음이 아니더라도 일단 다음 모델이 받아줄 수 있으므로 토스트를 띄우고 continue 해봅니다.
-                    st.toast(f"⚠️ {model_name} 실행 중 오류 발생. 다음 모델 시도 중...", icon="🔄")
+                    st.toast(f"⚠️ {model_name} 연결 지연. 다른 방식으로 재시도합니다...", icon="🔄")
                     continue
             
-            # 모든 모델이 실패했거나 에러로 튕겼을 때
             if not success:
-                st.error("AI 에이전트 실행에 실패했습니다. 뉴스 검색 API 차단 혹은 모델 사용량 초과일 수 있습니다.")
+                st.error("AI 에이전트 실행에 실패했습니다. 잠시 후 다시 시도해 주세요.")
