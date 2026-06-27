@@ -21,16 +21,6 @@ except KeyError:
 
 # 3. 도구(Tools) 정의
 @tool
-def get_korean_stock_price(ticker: str) -> str:
-    """한국 주식 종목의 실시간 주가를 가져옵니다."""
-    try:
-        stock = yf.Ticker(ticker)
-        price = stock.history(period="1d")['Close'].iloc[-1]
-        return f"{ticker}의 현재 주가는 {int(price)}입니다."
-    except Exception as e:
-        return "주가 정보를 가져오는 데 실패했습니다."
-
-@tool
 def multiply(a: float, b: float) -> float:
     """두 숫자를 곱하는 계산기 도구입니다."""
     return a * b
@@ -61,7 +51,7 @@ def get_korean_stock_price(ticker: str) -> str:
         price = stock.history(period="1d")['Close'].iloc[-1]
         return f"{ticker}의 현재 주가는 {int(price)}입니다."
     except Exception as e:
-        return f"주가 정보를 가져오는 데 실패했습니다. (입력된 값: {ticker})"
+        return f"주가 정보를 가져오는 데 실패했습니다. (입력된 값: {ticker}, 에러: {e})"
 @tool
 def get_stock_history(ticker: str) -> str:
     """
