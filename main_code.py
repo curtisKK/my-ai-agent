@@ -44,7 +44,25 @@ def get_today_date() -> str:
     """오늘의 날짜를 반환하는 도구입니다."""
     return datetime.datetime.now().strftime("%Y년 %m월 %d일")
 
-tools = [get_korean_stock_price, calculate_average, multiply, get_today_date]
+@tool
+def get_korean_stock_price(ticker: str) -> str:
+    """
+    특정 한국 주식 종목의 실시간 주가를 가져옵니다.
+    
+    [중요 지시사항] 
+    사용자가 '삼성전자'나 'SK하이닉스' 처럼 기업 이름만 부르더라도,
+    당신(AI)의 지식을 활용해 해당 기업의 6자리 한국 주식 종목코드를 스스로 찾으세요.
+    그 후 코스피 종목은 뒤에 '.KS', 코스닥은 '.KQ'를 붙여서 이 도구의 입력값(ticker)으로 사용해야 합니다.
+    (예시: 사용자가 "카카오 주가 찾아줘" 라고 하면 -> '035720.KS' 를 입력하여 실행할 것)
+    """
+    try:
+        stock = yf.Ticker(ticker)
+        price = stock.history(period="1d")['Close'].iloc[-1]
+        return f"{ticker}의 현재 주가는 {int(price)}입니다."
+    except Exception as e:
+        return f"주가 정보를 가져오는 데 실패했습니다. (입력된 값: {ticker})"
+
+tools = [get_korean_stock_price, calculate_average, multiply, get_today_date, get_korean_stock_price]
 
 # 4. 에이전트 설정 
 llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0) # 본인에게 작동했던 모델명으로 변경 가능
