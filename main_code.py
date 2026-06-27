@@ -84,6 +84,7 @@ def get_stock_history(ticker: str) -> str:
 
 # 뉴스 검색기 도구 생성
 @tool
+@tool
 def search_news(query: str) -> str:
     """
     특정 기업의 최신 뉴스, 호재, 악재, 시장 동향 등을 웹에서 검색합니다.
@@ -93,7 +94,8 @@ def search_news(query: str) -> str:
         search = DuckDuckGoSearchAPIWrapper()
         return search.run(query)
     except Exception as e:
-        return "뉴스 검색에 실패했습니다."
+        # 💡 [핵심] 에러를 뭉뚱그리지 말고, 실제 발생한 에러(e)를 그대로 문자에 포함시킵니다.
+        return f"뉴스 검색에 실패했습니다. 시스템 에러 메시지: {e}"
 
 tools = [get_korean_stock_price, calculate_average, multiply, get_today_date, get_korean_stock_price, get_stock_history, search_news]
 
