@@ -9,8 +9,8 @@ from langchain_community.tools import DuckDuckGoSearchRun
 
 # 1. 웹사이트 UI 설정 (화면을 조금 더 넓게 씁니다)
 st.set_page_config(page_title="주식 AI 에이전트", page_icon="📈", layout="centered")
-st.title("📈 대화형 주식 분석 AI 에이전트")
-st.markdown("이전 대화를 기억합니다! 편하게 채팅하듯 질문해 보세요.")
+st.title("📈 대화형 주식 분석 AI 에이전트 By 강재원 ")
+st.markdown("2026 7월 SK신입구성원교육 과제 ")
 
 # 🚨 2. API 키 보안 설정
 try:
