@@ -85,7 +85,7 @@ def get_stock_history(ticker: str) -> str:
 # 뉴스 검색기 도구 생성
 search_news = DuckDuckGoSearchRun(
     name="search_news",
-    description="특정 기업의 최신 뉴스, 호재, 악재, 시장 동향 등을 웹에서 검색합니다."
+    description="특정 기업의 최신 뉴스, 호재, 악재, 시장 동향 등을 웹에서 검색합니다.")
 
 tools = [get_korean_stock_price, calculate_average, multiply, get_today_date, get_korean_stock_price, get_stock_history]
 
