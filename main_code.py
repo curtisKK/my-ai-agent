@@ -114,6 +114,9 @@ for message in st.session_state.messages:
 # ==========================================
 # 💬 채팅 입력창 (카카오톡처럼 맨 아래에 고정됨)
 # ==========================================
+# ==========================================
+# 💬 채팅 입력창 및 에이전트 실행부
+# ==========================================
 if prompt := st.chat_input("예: SK하이닉스 최근 주가 분석해 줘"):
     
     st.session_state.messages.append({"role": "user", "content": prompt})
@@ -134,26 +137,43 @@ if prompt := st.chat_input("예: SK하이닉스 최근 주가 분석해 줘"):
             
             success = False
             
-            # 여기서부터가 진짜입니다! 실패할 때마다 새 모델을 꺼내서 에이전트를 '새로' 만듭니다.
+            # 실패할 때마다 새 모델을 꺼내서 에이전트를 '새로' 만듭니다.
             for model_name in models_to_try:
                 try:
-                    # 💡 아까 위에 있던 4번 코드가 이 안으로 들어와야 합니다!
                     current_llm = ChatGoogleGenerativeAI(model=model_name, temperature=0)
                     agent_executor = create_react_agent(current_llm, tools)
                     
                     # 방금 새로 만든 에이전트로 실행
                     response = agent_executor.invoke({"messages": agent_memory})
-                
-                final_answer = response["messages"][-1].content
-                if isinstance(final_answer, list) and len(final_answer) > 0 and 'text' in final_answer[0]:
-                    answer_text = final_answer[0]['text']
-                else:
-                    answer_text = final_answer
-                
-                st.markdown(answer_text)
-                
-                # 4. AI의 최종 답변도 메모리에 저장하여 다음 질문 때 기억하게 함
-                st.session_state.messages.append({"role": "assistant", "content": answer_text})
-                
-            except Exception as e:
-                st.error(f"에러가 발생했습니다: {e}")
+                    
+                    # 💡 [수정 포인트] 성공 시 실행될 아래 코드가 모두 try 안으로 들어와야 합니다!
+                    final_answer = response["messages"][-1].content
+                    if isinstance(final_answer, list) and len(final_answer) > 0 and 'text' in final_answer[0]:
+                        answer_text = final_answer[0]['text']
+                    else:
+                        answer_text = final_answer
+                    
+                    # 화면에 출력
+                    st.markdown(answer_text)
+                    
+                    # AI의 최종 답변도 메모리에 저장하여 다음 질문 때 기억하게 함
+                    st.session_state.messages.append({"role": "assistant", "content": answer_text})
+                    
+                    # 여기까지 에러 없이 무사히 왔다면 성공 깃발을 들고 반복문 탈출!
+                    success = True
+                    break
+                    
+                except Exception as e:
+                    error_msg = str(e)
+                    # 한도 초과(429)나 모델 없음(404) 에러면 다음 모델로 패스
+                    if "429" in error_msg or "404" in error_msg:
+                        st.toast(f"⚠️ {model_name} 연결 지연. 다음 모델로 자동 전환합니다...", icon="🔄")
+                        continue
+                    else:
+                        # 주가 검색 로직 자체의 에러 등 다른 예외라면 에러 출력 후 중단
+                        st.error(f"에러가 발생했습니다: {error_msg}")
+                        break
+            
+            # 모든 모델이 실패했을 경우의 안전장치
+            if not success:
+                st.error("현재 모든 AI 모델의 하루 사용량이 초과되었습니다. 잠시 후 다시 시도해 주세요.")
