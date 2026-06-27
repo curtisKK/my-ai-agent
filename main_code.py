@@ -97,9 +97,7 @@ def search_news(query: str) -> str:
 
 tools = [get_korean_stock_price, calculate_average, multiply, get_today_date, get_korean_stock_price, get_stock_history, search_news]
 
-# 4. 에이전트 설정 
-llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0) # 본인에게 작동했던 모델명으로 변경 가능
-agent_executor = create_react_agent(llm, tools)
+
 
 # ==========================================
 # 💡 핵심: 대화 기록을 저장하는 메모리(session_state) 만들기
@@ -116,22 +114,35 @@ for message in st.session_state.messages:
 # ==========================================
 # 💬 채팅 입력창 (카카오톡처럼 맨 아래에 고정됨)
 # ==========================================
-if prompt := st.chat_input("예: 오늘 삼성전자 주가 찾아줘"):
+if prompt := st.chat_input("예: SK하이닉스 최근 주가 분석해 줘"):
     
-    # 1. 사용자가 입력한 질문을 화면에 표시하고 메모리에 저장
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # 2. 에이전트에게 이전 대화 기록까지 싹 다 묶어서 전달 ("우리가 지금까지 이런 대화를 했어!")
     agent_memory = [(msg["role"], msg["content"]) for msg in st.session_state.messages]
     
-    # 3. AI의 답변을 받아오고 화면에 표시
     with st.chat_message("assistant"):
-        with st.spinner("AI가 실시간 데이터를 검색하고 계산 중입니다..."):
-            try:
-                # 단일 질문이 아닌, 전체 대화 기록(agent_memory)을 invoke에 넣습니다.
-                response = agent_executor.invoke({"messages": agent_memory})
+        with st.spinner("AI가 분석 중입니다..."):
+            
+            # 모델 3개를 준비해두고
+            models_to_try = [
+                "gemini-2.5-flash",
+                "gemini-2.5-flash-lite",
+                "gemini-1.5-flash"
+            ]
+            
+            success = False
+            
+            # 여기서부터가 진짜입니다! 실패할 때마다 새 모델을 꺼내서 에이전트를 '새로' 만듭니다.
+            for model_name in models_to_try:
+                try:
+                    # 💡 아까 위에 있던 4번 코드가 이 안으로 들어와야 합니다!
+                    current_llm = ChatGoogleGenerativeAI(model=model_name, temperature=0)
+                    agent_executor = create_react_agent(current_llm, tools)
+                    
+                    # 방금 새로 만든 에이전트로 실행
+                    response = agent_executor.invoke({"messages": agent_memory})
                 
                 final_answer = response["messages"][-1].content
                 if isinstance(final_answer, list) and len(final_answer) > 0 and 'text' in final_answer[0]:
