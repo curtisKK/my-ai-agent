@@ -3,4 +3,4 @@ yfinance
 langchain-google-genai
 langgraph
 langchain-community
-duckduckgo-search
+tavily-python
