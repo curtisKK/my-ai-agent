@@ -6,11 +6,12 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.tools import tool
 from langgraph.prebuilt import create_react_agent
 
-# 1. 웹사이트 UI 설정
-st.title("📈 AI 주식 분석 에이전트")
-st.markdown("질문을 입력하면 AI가 실시간 주가를 검색하고 계산해 줍니다.")
+# 1. 웹사이트 UI 설정 (화면을 조금 더 넓게 씁니다)
+st.set_page_config(page_title="주식 AI 에이전트", page_icon="📈", layout="centered")
+st.title("📈 대화형 주식 분석 AI 에이전트")
+st.markdown("이전 대화를 기억합니다! 편하게 채팅하듯 질문해 보세요.")
 
-# 🚨 2. 보안 핵심: API 키를 코드에 적지 않고 Streamlit 금고(Secrets)에서 불러옵니다.
+# 🚨 2. API 키 보안 설정
 try:
     os.environ["GOOGLE_API_KEY"] = st.secrets["GOOGLE_API_KEY"]
 except KeyError:
@@ -45,24 +46,52 @@ def get_today_date() -> str:
 
 tools = [get_korean_stock_price, calculate_average, multiply, get_today_date]
 
-# 4. 에이전트 설정 (무료 한도가 넉넉한 1.5-flash 사용 권장)
-llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0)
+# 4. 에이전트 설정 
+llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0) # 본인에게 작동했던 모델명으로 변경 가능
 agent_executor = create_react_agent(llm, tools)
 
-# 5. 사용자 입력 및 실행 버튼 UI
-query = st.text_input("질문을 입력하세요:", "오늘 날짜와 현재 삼성전자(005930.KS)와 SK하이닉스(000660.KS)의 실시간 주가를 찾아봐줘.")
+# ==========================================
+# 💡 핵심: 대화 기록을 저장하는 메모리(session_state) 만들기
+# ==========================================
+if "messages" not in st.session_state:
+    # 첫 접속 시 메모리(리스트)를 비워둔 상태로 생성합니다.
+    st.session_state.messages = []
 
-if st.button("에이전트 실행"):
-    with st.spinner("AI가 실시간 데이터를 검색하고 계산 중입니다. 잠시만 기다려주세요..."):
-        try:
-            response = agent_executor.invoke({"messages": [("user", query)]})
-            final_answer = response["messages"][-1].content
-            
-            st.success("답변 생성 완료!")
-            st.markdown("### 🤖 에이전트 최종 답변")
-            if isinstance(final_answer, list) and len(final_answer) > 0 and 'text' in final_answer[0]:
-                st.info(final_answer[0]['text'])
-            else:
-                st.info(final_answer)
-        except Exception as e:
-            st.error(f"에러가 발생했습니다: {e}")
+# 기존의 대화 기록을 화면에 순서대로 그려줍니다. (새로고침 되어도 유지됨)
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+# ==========================================
+# 💬 채팅 입력창 (카카오톡처럼 맨 아래에 고정됨)
+# ==========================================
+if prompt := st.chat_input("예: 오늘 삼성전자 주가 찾아줘"):
+    
+    # 1. 사용자가 입력한 질문을 화면에 표시하고 메모리에 저장
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
+
+    # 2. 에이전트에게 이전 대화 기록까지 싹 다 묶어서 전달 ("우리가 지금까지 이런 대화를 했어!")
+    agent_memory = [(msg["role"], msg["content"]) for msg in st.session_state.messages]
+    
+    # 3. AI의 답변을 받아오고 화면에 표시
+    with st.chat_message("assistant"):
+        with st.spinner("AI가 실시간 데이터를 검색하고 계산 중입니다..."):
+            try:
+                # 단일 질문이 아닌, 전체 대화 기록(agent_memory)을 invoke에 넣습니다.
+                response = agent_executor.invoke({"messages": agent_memory})
+                
+                final_answer = response["messages"][-1].content
+                if isinstance(final_answer, list) and len(final_answer) > 0 and 'text' in final_answer[0]:
+                    answer_text = final_answer[0]['text']
+                else:
+                    answer_text = final_answer
+                
+                st.markdown(answer_text)
+                
+                # 4. AI의 최종 답변도 메모리에 저장하여 다음 질문 때 기억하게 함
+                st.session_state.messages.append({"role": "assistant", "content": answer_text})
+                
+            except Exception as e:
+                st.error(f"에러가 발생했습니다: {e}")
