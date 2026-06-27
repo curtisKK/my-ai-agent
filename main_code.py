@@ -5,9 +5,10 @@ import streamlit as st
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.tools import tool
 from langgraph.prebuilt import create_react_agent
-from langchain_community.tools import DuckDuckGoSearchRun
+# 💡 [수정 1] DuckDuckGo 대신 Tavily를 가져옵니다.
+from langchain_community.tools.tavily_search import TavilySearchResults 
 
-# 1. 웹사이트 UI 설정 (화면을 조금 더 넓게 씁니다)
+# 1. 웹사이트 UI 설정 
 st.set_page_config(page_title="주식 AI 에이전트", page_icon="📈", layout="centered")
 st.title("📈 주식 분석 AI 에이전트 By 강재원 ")
 st.markdown("2026년 7월 SK신입구성원교육 과제 입니다! ")
@@ -15,8 +16,10 @@ st.markdown("2026년 7월 SK신입구성원교육 과제 입니다! ")
 # 🚨 2. API 키 보안 설정
 try:
     os.environ["GOOGLE_API_KEY"] = st.secrets["GOOGLE_API_KEY"]
+    # 💡 [수정 2] Tavily API 키도 금고에서 가져와 환경변수에 등록합니다.
+    os.environ["TAVILY_API_KEY"] = st.secrets["TAVILY_API_KEY"] 
 except KeyError:
-    st.error("API 키가 금고(Secrets)에 설정되지 않았습니다.")
+    st.error("API 키(Google 또는 Tavily)가 금고(secrets.toml)에 설정되지 않았습니다.")
     st.stop()
 
 # 3. 도구(Tools) 정의
@@ -69,16 +72,16 @@ def get_stock_history(ticker: str) -> str:
 def search_news(query: str) -> str:
     """특정 기업의 최신 뉴스를 웹에서 검색합니다. '기업명 최신 뉴스' 형태로 검색하세요."""
     try:
-        search = DuckDuckGoSearchRun()
+        # 💡 [수정 3] Tavily 검색기를 사용하도록 변경 (가장 관련성 높은 결과 3개만 가져옴)
+        search = TavilySearchResults(max_results=3) 
         result = search.invoke(query)
-        if not result or "No good DuckDuckGo Search Result" in result:
+        if not result:
             return "뉴스를 찾을 수 없습니다."
-        return result
+        # Tavily는 JSON 형태의 리스트를 반환하므로 문자열로 변환해서 줍니다.
+        return str(result) 
     except Exception as e:
-        # 💡 [핵심 수정] 에러를 뭉뚱그리지 않고, e(진짜 에러 원인)를 그대로 리턴합니다!
         return f"뉴스 검색 시스템 오류 원인: {str(e)}"
 
-# 💡 수정 1: 중복된 도구 제거 완료
 tools = [calculate_average, multiply, get_today_date, get_korean_stock_price, get_stock_history, search_news]
 
 
