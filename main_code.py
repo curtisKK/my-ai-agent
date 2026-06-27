@@ -5,6 +5,7 @@ import streamlit as st
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.tools import tool
 from langgraph.prebuilt import create_react_agent
+from langchain_community.tools import DuckDuckGoSearchRun
 
 # 1. 웹사이트 UI 설정 (화면을 조금 더 넓게 씁니다)
 st.set_page_config(page_title="주식 AI 에이전트", page_icon="📈", layout="centered")
@@ -61,8 +62,32 @@ def get_korean_stock_price(ticker: str) -> str:
         return f"{ticker}의 현재 주가는 {int(price)}입니다."
     except Exception as e:
         return f"주가 정보를 가져오는 데 실패했습니다. (입력된 값: {ticker})"
+@tool
+def get_stock_history(ticker: str) -> str:
+    """
+    특정 주식의 최근 1달간의 주가 흐름(최고가, 최저가, 변동성 등) 데이터를 가져옵니다.
+    """
+    try:
+        stock = yf.Ticker(ticker)
+        hist = stock.history(period="1mo") # 최근 1개월 데이터
+        
+        # 데이터 전처리: 너무 길면 AI가 헷갈리므로 핵심 요약만 전달
+        max_price = int(hist['High'].max())
+        min_price = int(hist['Low'].min())
+        start_price = int(hist['Close'].iloc[0])
+        end_price = int(hist['Close'].iloc[-1])
+        trend = "상승세" if end_price > start_price else "하락세"
+        
+        return f"{ticker}의 최근 1달 흐름: 시작가 {start_price}원 -> 현재가 {end_price}원 ({trend}). 최고가는 {max_price}원, 최저가는 {min_price}원 이었습니다."
+    except Exception as e:
+        return "과거 주가 데이터를 가져오지 못했습니다."
 
-tools = [get_korean_stock_price, calculate_average, multiply, get_today_date, get_korean_stock_price]
+# 뉴스 검색기 도구 생성
+search_news = DuckDuckGoSearchRun(
+    name="search_news",
+    description="특정 기업의 최신 뉴스, 호재, 악재, 시장 동향 등을 웹에서 검색합니다."
+
+tools = [get_korean_stock_price, calculate_average, multiply, get_today_date, get_korean_stock_price, get_stock_history]
 
 # 4. 에이전트 설정 
 llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0) # 본인에게 작동했던 모델명으로 변경 가능
