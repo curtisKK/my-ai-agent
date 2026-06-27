@@ -75,7 +75,8 @@ def search_news(query: str) -> str:
             return "뉴스를 찾을 수 없습니다."
         return result
     except Exception as e:
-        return "뉴스 검색 시스템에 일시적인 오류가 있습니다."
+        # 💡 [핵심 수정] 에러를 뭉뚱그리지 않고, e(진짜 에러 원인)를 그대로 리턴합니다!
+        return f"뉴스 검색 시스템 오류 원인: {str(e)}"
 
 # 💡 수정 1: 중복된 도구 제거 완료
 tools = [calculate_average, multiply, get_today_date, get_korean_stock_price, get_stock_history, search_news]
