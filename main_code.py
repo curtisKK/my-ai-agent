@@ -44,30 +44,41 @@ def get_korean_stock_price(ticker: str) -> str:
     특정 한국 주식 종목의 실시간 주가를 가져옵니다.
     입력값(ticker)은 반드시 '000660.KS' 같은 코드 형태여야 합니다.
     """
-    # 💡 [핵심 수정] AI가 한글을 그대로 던질 경우를 대비한 안전장치 (자주 찾는 종목들)
-    ticker_map = {
-        "SK하이닉스": "000660.KS",
-        "삼성전자": "005930.KS",
-        "카카오": "035720.KS",
-        "현대차": "005380.KS",
-        "네이버": "035420.KS",
-        "NAVER": "035420.KS"
-    }
-    
-    # AI가 'SK하이닉스'라고 주면 '000660.KS'로 바꿔치기
-    if ticker in ticker_map:
-        ticker = ticker_map[ticker]
+    # 💡 [수정] 여러 도구에서 공통으로 쓸 수 있게 딕셔너리를 밖으로 뺍니다.
+TICKER_MAP = {
+    "SK하이닉스": "000660.KS",
+    "삼성전자": "005930.KS",
+    "카카오": "035720.KS",
+    "현대차": "005380.KS",
+    "네이버": "035420.KS",
+    "NAVER": "035420.KS"
+}
+
+@tool
+def get_korean_stock_price(company_name_or_ticker: str) -> str:
+    """
+    특정 한국 주식 종목의 실시간 주가를 가져옵니다.
+    입력값은 'SK하이닉스' 같은 기업명이나 '000660.KS' 같은 티커 코드 모두 가능합니다.
+    """
+    # 딕셔너리에 있으면 티커로 변환, 없으면 입력값 그대로 사용
+    ticker = TICKER_MAP.get(company_name_or_ticker, company_name_or_ticker)
 
     try:
         stock = yf.Ticker(ticker)
         price = stock.history(period="1d")['Close'].iloc[-1]
         return f"현재 주가는 {int(price)}원 입니다."
     except Exception as e:
-        return f"주가 정보를 가져오는 데 실패했습니다. (AI가 입력한 값: {ticker})"
+        return f"주가 정보를 가져오는 데 실패했습니다. (AI가 입력한 값: {company_name_or_ticker})"
 
 @tool
-def get_stock_history(ticker: str) -> str:
-    """특정 주식의 최근 1달간의 주가 흐름(최고가, 최저가 등)을 가져옵니다."""
+def get_stock_history(company_name_or_ticker: str) -> str:
+    """
+    특정 주식의 최근 1달간의 주가 흐름(최고가, 최저가, 시작가, 현재가)을 가져옵니다.
+    입력값은 'SK하이닉스' 같은 기업명이나 '000660.KS' 같은 티커 코드 모두 가능합니다.
+    """
+    # 여기에도 동일한 변환 로직 적용
+    ticker = TICKER_MAP.get(company_name_or_ticker, company_name_or_ticker)
+    
     try:
         stock = yf.Ticker(ticker)
         hist = stock.history(period="1mo")
@@ -78,8 +89,7 @@ def get_stock_history(ticker: str) -> str:
         trend = "상승세" if end_price > start_price else "하락세"
         return f"최근 1달: 시작가 {start_price}원 -> 현재가 {end_price}원 ({trend}). 최고가 {max_price}원, 최저가 {min_price}원."
     except Exception as e:
-        return "과거 주가 데이터를 가져오지 못했습니다."
-
+        return f"과거 주가 데이터를 가져오지 못했습니다. (AI가 입력한 값: {company_name_or_ticker})"
 @tool
 def search_news(query: str) -> str:
     """특정 기업의 최신 뉴스를 웹에서 검색합니다. '기업명 최신 뉴스' 형태로 검색하세요."""
